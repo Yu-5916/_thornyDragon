@@ -4,61 +4,73 @@ using UnityEngine;
 
 public class MoveableObject : MonoBehaviour {
 
-    public GameObject testCube;
+    private Material material;
+    private Color normalColor;
+    private Color highlightColor;
+    private bool touching;
+    private float interval;
 
-    //cursor test
-    public Texture2D cursorTexture;
-    public static Vector2 cursorHotspot;
-    private CursorMode cursorMode = CursorMode.Auto;
+    public AudioSource rayray;
 
-	void Start () {
-        testCube = GameObject.Find("testCube");
-
-        Cursor.SetCursor(cursorTexture, cursorHotspot, cursorMode);
-	}
-
-    private void FixedUpdate()
+    private void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = true;
+        material = GetComponent<MeshRenderer>().material;
+
+        normalColor = material.color;
+        highlightColor = new Color(
+            normalColor.r * 1.5f,
+            normalColor.g * 1.5f,
+            normalColor.b * 1.5f
+            );    
     }
 
-    void Update () {
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = true;
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            RaycastHit hit;
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-            if(Physics.Raycast(ray, out hit))
-            {
-                if (hit.transform.name == "testCube")
-                {
-
-                    Debug.Log("Object clicked");
-                }
-            }
-        }
-		
-	}
-
-    private void OnGUI()
+    public void OnMouseOver()
     {
-        //Lock the cursor
-        if(GUI.Button(new Rect(0,0,100,50), "Lock Cursor"))
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = true;
-            Debug.Log(cursorHotspot);
-        }
+        touching = true;
 
-        //Confine the cursor
-        if(GUI.Button(new Rect(125,0,100,50), "Confine Cursor"))
+        if (touching)
         {
-            Cursor.lockState = CursorLockMode.Confined;
+            interval += Time.deltaTime;
+            material.color = Color.Lerp(normalColor, highlightColor, interval);
+
+            if (touching && Input.GetButtonDown("Fire1"))
+            {
+                rayray.Play();
+            }
+        }     
+    }
+
+    public void OnMouseExit()
+    {
+        touching = false;
+
+        if (!touching)
+        {
+            interval += Time.deltaTime;
+            material.color = Color.Lerp(highlightColor, normalColor, interval);
         }
+    }
+
+    void FindMouse()
+    {
+        Vector3 p = new Vector3();
+        Camera c = Camera.main;
+        Event e = Event.current;
+        Vector2 mousePos = new Vector2()
+        {
+            // Get the mouse position from Event.
+            // Note that the y position from Event is inverted.
+            x = e.mousePosition.x,
+            y = c.pixelHeight - e.mousePosition.y
+        };
+
+        p = c.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, c.nearClipPlane));
+
+        GUILayout.BeginArea(new Rect(20, 20, 250, 120));
+        GUILayout.Label("Screen pixels: " + c.pixelWidth + ":" + c.pixelHeight);
+        GUILayout.Label("Mouse position: " + mousePos);
+        GUILayout.Label("World position: " + p.ToString("F3"));
+        GUILayout.EndArea();
     }
 }
